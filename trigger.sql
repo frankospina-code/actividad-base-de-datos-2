@@ -1,4 +1,4 @@
--- Trigger para insertar en copia_nuevos_docente después de una inserción en docente
+-- Trigger para insertar en copia_nuevos_docente después de una actualizacion en docente
 DELIMITER $$
 CREATE TRIGGER tr_docente_after_update
 AFTER UPDATE ON docente
