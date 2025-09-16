@@ -1,6 +1,6 @@
 --Este Trigger sirve para insertar en copia_actualizados_docente después de una actualizacion realizada en docente cualquiera de los campos
-
-DELIMITER $$-- Cambiamos el delimitador para definir el trigger
+Use pinformaticos;-- Selecciona la base de datos pinformaticos
+DELIMITER $$-- se cambia el delimitador para definir el trigger
 CREATE TRIGGER tr_docente_after_update -- Nombre del trigger
 AFTER UPDATE ON docente-- Se activa después de una actualización en la tabla docente
 FOR EACH ROW
