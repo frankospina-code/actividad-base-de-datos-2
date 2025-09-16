@@ -1,10 +1,10 @@
-use CREATE DATABASE proyecto_informaticos;
+CREATE DATABASE proyecto_informaticos;
 USE proyecto_informaticos;
 /* ============================
    schema.sql  (MySQL 8.0+)
    ============================ */
 
--- Tablas base
+/* Tablas base */
 CREATE TABLE docente (
   docente_id        INT AUTO_INCREMENT PRIMARY KEY,
   numero_documento  VARCHAR(20)  NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE proyecto (
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Tablas de auditoría
+/* Tablas de auditoría */
 CREATE TABLE copia_actualizados_docente (
   auditoria_id       INT AUTO_INCREMENT PRIMARY KEY,
   docente_id         INT NOT NULL,
@@ -60,158 +60,161 @@ CREATE TABLE copia_eliminados_docente (
   usuario_sql        VARCHAR(128) NOT NULL DEFAULT (CURRENT_USER())
 ) ENGINE=InnoDB;
 
--- CRUD 
--- Procedimientos DOCENTE
-DELIMITER $$  --permite que el cuerpo del procedimiento, que contiene múltiples sentencias SQL terminadas en ;, no se interprete como el fin del procedimiento
-CREATE PROCEDURE sp_docente_crear(  --crear un procedimiento almacenado--nombre del procedimiento
-  IN p_numero_documento VARCHAR(20), --recibe el número de documento del docente (máx 20 caracteres)
-  IN p_nombres          VARCHAR(120), --recibe el nombre completo del docente (máx 120 caracteres)
-  IN p_titulo           VARCHAR(120), --recibe el título profesional 
-  IN p_anios_experiencia INT, --recibe los años de experiencia (Tipo entero)
-  IN p_direccion        VARCHAR(180),  --recibe la dirección (máx 180 caracteres)
-  IN p_tipo_docente     VARCHAR(40)  --recibe el tipo de docente (máx 40 caracteres)
+/* CRUD */
+/* Procedimientos DOCENTE */
+DELIMITER $$  /* permite que el cuerpo del procedimiento, que contiene múltiples sentencias SQL terminadas en ;, no se interprete como el fin del procedimiento */
+CREATE PROCEDURE sp_docente_crear(  /* crear un procedimiento almacenado --nombre del procedimiento */
+  IN p_numero_documento VARCHAR(20), /* recibe el número de documento del docente (máx 20 caracteres) */
+  IN p_nombres          VARCHAR(120), /* recibe el nombre completo del docente (máx 120 caracteres) */
+  IN p_titulo           VARCHAR(120), /* recibe el título profesional */
+  IN p_anios_experiencia INT, /* recibe los años de experiencia (Tipo entero) */
+  IN p_direccion        VARCHAR(180),  /* recibe la dirección (máx 180 caracteres) */
+  IN p_tipo_docente     VARCHAR(40)  /* recibe el tipo de docente (máx 40 caracteres) */
 )
-BEGIN  --inicio del cuerpo
-  INSERT INTO docente (numero_documento, nombres, titulo, anios_experiencia, direccion, tipo_docente) --inserta un nuevo registro en la tabla + columnas que recibirán los valores
-  VALUES (p_numero_documento, p_nombres, p_titulo, IFNULL(p_anios_experiencia,0), p_direccion, p_tipo_docente);--arámetros de entrada + si no se envía valor para años de experiencia (NULL), se asigna automáticamente 0.
-  SELECT LAST_INSERT_ID() AS docente_id_creado; --retorna el último valor autoincremental generado en la sesión actual ("AS" asigna un alias al resultado)
-END$$  --fin del cuerpo
+BEGIN  /* inicio del cuerpo */
+  INSERT INTO docente (numero_documento, nombres, titulo, anios_experiencia, direccion, tipo_docente) /* inserta un nuevo registro en la tabla + columnas que recibirán los valores */
+  VALUES (p_numero_documento, p_nombres, p_titulo, IFNULL(p_anios_experiencia,0), p_direccion, p_tipo_docente); /* parámetros de entrada + si no se envía valor para años de experiencia (NULL), se asigna automáticamente 0. */
+  SELECT LAST_INSERT_ID() AS docente_id_creado; /* retorna el último valor autoincremental generado en la sesión actual ("AS" asigna un alias al resultado) */
+END$$  /* fin del cuerpo */
 
-CREATE PROCEDURE sp_docente_leer(IN p_docente_id INT) --indica que vamos a crear un procedimiento almacenado--nombre del procedimiento--define un parámetro de entrada que indica el ID del docente que queremos consultar
-BEGIN --inicio del cuerpo
-  SELECT * FROM docente WHERE docente_id = p_docente_id; --("*" elecciona todas las columnas del registro --"WHERE docente_id"filtra los resultados para devolver solo el docente cuyo ID coincide con el parámetro de entrada)
-
-CREATE PROCEDURE sp_docente_actualizar(  --creando un procedimiento almacenado
-  IN p_docente_id       INT,   --ID del docente que se desea actualizar
-  IN p_numero_documento VARCHAR(20), --nuevo número de documento (o el mismo si no cambia)
-  IN p_nombres          VARCHAR(120), --nuevo nombre completo (o el mismo si no cambia)
-  IN p_titulo           VARCHAR(120),  --nuevo título profesional (o el mismo si no cambia)
-  IN p_anios_experiencia INT,     --años de experiencia actualizados
-  IN p_direccion        VARCHAR(180), --nueva dirección (o el mismo si no cambia)
-  IN p_tipo_docente     VARCHAR(40)  --nuevo tipo de docente (o el mismo si no cambia)
-)
-BEGIN  --inicio del cuerpo
-  UPDATE docente  --instrucción que modifica un registro en la tabla
-     SET numero_documento = p_numero_documento, --valores enviados como parámetros.
-         nombres = p_nombres,
-         titulo = p_titulo,
-         anios_experiencia = IFNULL(p_anios_experiencia,0),--si se envía NULL, se asigna 0 como valor por defecto.
-         direccion = p_direccion,
-         tipo_docente = p_tipo_docente
-   WHERE docente_id = p_docente_id; --asegura que solo se actualice el docente con el ID especificado
-  SELECT * FROM docente WHERE docente_id = p_docente_id; --Realiza una consulta de confirmación después de actualizar--Devuelve todos los datos del docente actualizado
-END$$  --fin del cuerpo
-
-CREATE PROCEDURE sp_docente_eliminar(IN p_docente_id INT)--crear un procedimiento almacenado--eliminar un docente existente--indica el ID del docente que se desea eliminar.
-BEGIN  --inicio del cuerpo
-  DELETE FROM docente WHERE docente_id = p_docente_id; --instrucción que elimina un registro--asegura que solo se elimine el docente con el ID especificado
-END$$  --fin del cuerpo
-
--- Procedimientos PROYECTO
---crear un procedimiento almacenado
-CREATE PROCEDURE sp_proyecto_crear(
-  IN p_nombre           VARCHAR(120), --nombre del proyecto (máximo 120 caracteres)
-  IN p_descripcion      VARCHAR(400),--escripción del proyecto (máximo 400 caracteres)
-  IN p_fecha_inicial    DATE,--fecha de inicio del proyecto
-  IN p_fecha_final      DATE,--fecha de finalización del proyecto
-  IN p_presupuesto      DECIMAL(12,2), --presupuesto asignado al proyecto (tipo decimal con 12 dígitos y 2 decimales)
-  IN p_horas            INT, --cantidad de horas estimadas para el proyecto (tipo entero)
-  IN p_docente_id_jefe  INT--ID del docente responsable del proyecto
-)
-BEGIN  --inicio del cuerpo
-  INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupuesto, horas, docente_id_jefe)--valores que se insertan en la tabla
-  VALUES (p_nombre, p_descripcion, p_fecha_inicial, p_fecha_final, IFNULL(p_presupuesto,0), IFNULL(p_horas,0), p_docente_id_jefe);--si loa parámetros son NULL, se asigna automáticamente 0.
-  SELECT LAST_INSERT_ID() AS proyecto_id_creado;--retorna el último valor autoincremental generado
-END$$  --fin del cuerpo
-
---crea un nuevo procedimiento almacenado
-CREATE PROCEDURE sp_proyecto_leer(IN p_proyecto_id INT) --función es consultar (leer) un proyecto específico
-BEGIN
-  SELECT p.*, d.nombres AS nombre_docente_jefe --selecciona todas las columnas de la tabla (usando el alias p
-  FROM proyecto p--indica la tabla principal
-  JOIN docente d ON d.docente_id = p.docente_id_jefe --hace una unión interna con la tabla
-  WHERE p.proyecto_id = p_proyecto_id;--filtra el resultado para que solo muestre el proyecto cuyo ID coincide con el parámetro recibido.
+CREATE PROCEDURE sp_docente_leer(IN p_docente_id INT) /* indica que vamos a crear un procedimiento almacenado --nombre del procedimiento --define un parámetro de entrada que indica el ID del docente que queremos consultar */
+BEGIN /* inicio del cuerpo */
+  SELECT * FROM docente WHERE docente_id = p_docente_id; /* "*" elecciona todas las columnas del registro --"WHERE docente_id" filtra los resultados para devolver solo el docente cuyo ID coincide con el parámetro de entrada */
 END$$
 
---crear un procedimiento almacenado
-CREATE PROCEDURE sp_proyecto_actualizar(
-  IN p_proyecto_id      INT,--D del proyecto que se desea actualizar
-  IN p_nombre           VARCHAR(120), --nuevo nombre del proyecto (o el mismo si no cambia)
-  IN p_descripcion      VARCHAR(400),--nueva descripción del proyecto (o el mismo si no cambia)
-  IN p_fecha_inicial    DATE,--nueva fecha de inicio del proyecto (o el mismo si no cambia)
-  IN p_fecha_final      DATE,--nueva fecha de finalización del proyecto (o el mismo si no cambia)
-  IN p_presupuesto      DECIMAL(12,2),--nuevo presupuesto (acepta hasta 12 dígitos y 2 decimales).
-  IN p_horas            INT,--nueva cantidad de horas estimadas para el proyecto 
-  IN p_docente_id_jefe  INT --nuevo docente jefe responsable
+CREATE PROCEDURE sp_docente_actualizar(  /* creando un procedimiento almacenado */
+  IN p_docente_id       INT,   /* ID del docente que se desea actualizar */
+  IN p_numero_documento VARCHAR(20), /* nuevo número de documento (o el mismo si no cambia) */
+  IN p_nombres          VARCHAR(120), /* nuevo nombre completo (o el mismo si no cambia) */
+  IN p_titulo           VARCHAR(120),  /* nuevo título profesional (o el mismo si no cambia) */
+  IN p_anios_experiencia INT,     /* años de experiencia actualizados */
+  IN p_direccion        VARCHAR(180), /* nueva dirección (o el mismo si no cambia) */
+  IN p_tipo_docente     VARCHAR(40)  /* nuevo tipo de docente (o el mismo si no cambia) */
 )
-BEGIN--inicio del cuerpo
-  UPDATE proyecto --instrucción que modifica un registro en la tabla
-     SET nombre = p_nombre,--se actualizan con los valores recibidos en los parámetros.
+BEGIN  /* inicio del cuerpo */
+  UPDATE docente  /* instrucción que modifica un registro en la tabla */
+     SET numero_documento = p_numero_documento, /* valores enviados como parámetros. */
+         nombres = p_nombres,
+         titulo = p_titulo,
+         anios_experiencia = IFNULL(p_anios_experiencia,0), /* si se envía NULL, se asigna 0 como valor por defecto. */
+         direccion = p_direccion,
+         tipo_docente = p_tipo_docente
+   WHERE docente_id = p_docente_id; /* asegura que solo se actualice el docente con el ID especificado */
+  SELECT * FROM docente WHERE docente_id = p_docente_id; /* Realiza una consulta de confirmación después de actualizar --Devuelve todos los datos del docente actualizado */
+END$$  /* fin del cuerpo */
+
+CREATE PROCEDURE sp_docente_eliminar(IN p_docente_id INT) /* crear un procedimiento almacenado --eliminar un docente existente --indica el ID del docente que se desea eliminar. */
+BEGIN  /* inicio del cuerpo */
+  DELETE FROM docente WHERE docente_id = p_docente_id; /* instrucción que elimina un registro --asegura que solo se elimine el docente con el ID especificado */
+END$$  /* fin del cuerpo */
+
+/* Procedimientos PROYECTO */
+/* crear un procedimiento almacenado */
+CREATE PROCEDURE sp_proyecto_crear(
+  IN p_nombre           VARCHAR(120), /* nombre del proyecto (máximo 120 caracteres) */
+  IN p_descripcion      VARCHAR(400), /* descripción del proyecto (máximo 400 caracteres) */
+  IN p_fecha_inicial    DATE, /* fecha de inicio del proyecto */
+  IN p_fecha_final      DATE, /* fecha de finalización del proyecto */
+  IN p_presupuesto      DECIMAL(12,2), /* presupuesto asignado al proyecto (tipo decimal con 12 dígitos y 2 decimales) */
+  IN p_horas            INT, /* cantidad de horas estimadas para el proyecto (tipo entero) */
+  IN p_docente_id_jefe  INT /* ID del docente responsable del proyecto */
+)
+BEGIN  /* inicio del cuerpo */
+  INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupuesto, horas, docente_id_jefe) /* valores que se insertan en la tabla */
+  VALUES (p_nombre, p_descripcion, p_fecha_inicial, p_fecha_final, IFNULL(p_presupuesto,0), IFNULL(p_horas,0), p_docente_id_jefe); /* si los parámetros son NULL, se asigna automáticamente 0. */
+  SELECT LAST_INSERT_ID() AS proyecto_id_creado; /* retorna el último valor autoincremental generado */
+END$$  /* fin del cuerpo */
+
+/* crea un nuevo procedimiento almacenado */
+CREATE PROCEDURE sp_proyecto_leer(IN p_proyecto_id INT) /* función es consultar (leer) un proyecto específico */
+BEGIN
+  SELECT p.*, d.nombres AS nombre_docente_jefe /* selecciona todas las columnas de la tabla (usando el alias p */
+  FROM proyecto p /* indica la tabla principal */
+  JOIN docente d ON d.docente_id = p.docente_id_jefe /* hace una unión interna con la tabla */
+  WHERE p.proyecto_id = p_proyecto_id; /* filtra el resultado para que solo muestre el proyecto cuyo ID coincide con el parámetro recibido. */
+END$$
+
+/* crear un procedimiento almacenado */
+CREATE PROCEDURE sp_proyecto_actualizar(
+  IN p_proyecto_id      INT, /* ID del proyecto que se desea actualizar */
+  IN p_nombre           VARCHAR(120), /* nuevo nombre del proyecto (o el mismo si no cambia) */
+  IN p_descripcion      VARCHAR(400), /* nueva descripción del proyecto (o el mismo si no cambia) */
+  IN p_fecha_inicial    DATE, /* nueva fecha de inicio del proyecto (o el mismo si no cambia) */
+  IN p_fecha_final      DATE, /* nueva fecha de finalización del proyecto (o el mismo si no cambia) */
+  IN p_presupuesto      DECIMAL(12,2), /* nuevo presupuesto (acepta hasta 12 dígitos y 2 decimales). */
+  IN p_horas            INT, /* nueva cantidad de horas estimadas para el proyecto */
+  IN p_docente_id_jefe  INT /* nuevo docente jefe responsable */
+)
+BEGIN /* inicio del cuerpo */
+  UPDATE proyecto /* instrucción que modifica un registro en la tabla */
+     SET nombre = p_nombre, /* se actualizan con los valores recibidos en los parámetros. */
          fecha_inicial = p_fecha_inicial,
          fecha_final = p_fecha_final,
-         presupuesto = IFNULL(p_presupuesto,0),--si se recibe NULL, se asigna 0 como valor por defecto
-         horas = IFNULL(p_horas,0),--si se recibe NULL, se asigna 0 como valor por defecto
+         presupuesto = IFNULL(p_presupuesto,0), /* si se recibe NULL, se asigna 0 como valor por defecto */
+         horas = IFNULL(p_horas,0), /* si se recibe NULL, se asigna 0 como valor por defecto */
          docente_id_jefe = p_docente_id_jefe
    WHERE proyecto_id = p_proyecto_id;
-  CALL sp_proyecto_leer(p_proyecto_id);--condición para que solo se actualice el proyecto con el ID especificado
-END$$  --fin del cuerpo
+  CALL sp_proyecto_leer(p_proyecto_id); /* condición para que solo se actualice el proyecto con el ID especificado */
+END$$  /* fin del cuerpo */
 
---crear un procedimiento almacenado
+/* crear un procedimiento almacenado */
 CREATE PROCEDURE sp_proyecto_eliminar(IN p_proyecto_id INT)
-BEGIN--inicio del cuerpo
-  DELETE FROM proyecto WHERE proyecto_id = p_proyecto_id;--elimina registros de la tabla--condición para que solo se elimine el proyecto cuyo ID coincide con el parámetro recibido, evitando borrar toda la tabla por error
-END$$--fin del cuerpo
-DELIMITER ;  --restaura el delimitador estándar
+BEGIN /* inicio del cuerpo */
+  DELETE FROM proyecto WHERE proyecto_id = p_proyecto_id; /* elimina registros de la tabla --condición para que solo se elimine el proyecto cuyo ID coincide con el parámetro recibido, evitando borrar toda la tabla por error */
+END$$ /* fin del cuerpo */
+DELIMITER ;  /* restaura el delimitador estándar */
 
--- UDF
-CREATE FUNCTION fn_promedio_presupuesto_por_docente(p_docente_id INT) -- Crear una nueva función almacenada
-RETURNS DECIMAL(12,2) -- Especifica que la función retorna un valor decimal con 12 dígitos totales y 2 decimales
-DETERMINISTIC -- Indica que la función siempre devuelve el mismo resultado para los mismos parámetros de entrada
-READS SQL DATA -- Especifica que la función lee datos SQL pero no los modifica
-BEGIN -- Inicio del cuerpo de la función
-  DECLARE v_prom DECIMAL(12,2); -- Declara una variable local para almacenar el promedio calculado
-  SELECT IFNULL(AVG(presupuesto),0) INTO v_prom  -- Calcula el promedio de presupuesto de los proyectos donde el docente es jefe -- Si no hay proyectos, establece el promedio en 0 usando IFNULL
+/* UDF */
+DELIMITER $$
+CREATE FUNCTION fn_promedio_presupuesto_por_docente(p_docente_id INT) /* Crear una nueva función almacenada */
+RETURNS DECIMAL(12,2) /* Especifica que la función retorna un valor decimal con 12 dígitos totales y 2 decimales */
+DETERMINISTIC /* Indica que la función siempre devuelve el mismo resultado para los mismos parámetros de entrada */
+READS SQL DATA /* Especifica que la función lee datos SQL pero no los modifica */
+BEGIN /* Inicio del cuerpo de la función */
+  DECLARE v_prom DECIMAL(12,2); /* Declara una variable local para almacenar el promedio calculado */
+  SELECT IFNULL(AVG(presupuesto),0) INTO v_prom  /* Calcula el promedio de presupuesto de los proyectos donde el docente es jefe -- Si no hay proyectos, establece el promedio en 0 usando IFNULL */
   FROM proyecto
   WHERE docente_id_jefe = p_docente_id;
-  RETURN IFNULL(v_prom,0); -- Retorna el valor calculado, asegurando que si es NULL se convierta a 0
-END$$ -- Fin Del Cuerpo
+  RETURN IFNULL(v_prom,0); /* Retorna el valor calculado, asegurando que si es NULL se convierta a 0 */
+END$$ /* Fin Del Cuerpo */
+DELIMITER ;
 
---TRIGGERS
---Este Trigger sirve para insertar en copia_actualizados_docente después de una actualizacion realizada en docente cualquiera de los campos
 
-DELIMITER $$-- se cambia el delimitador para definir el trigger
-CREATE TRIGGER tr_docente_after_update -- Nombre del trigger
-AFTER UPDATE ON docente-- Se activa después de una actualización en la tabla docente
+/* TRIGGERS */
+/* Este Trigger sirve para insertar en copia_actualizados_docente después de una actualizacion realizada en docente cualquiera de los campos */
+
+DELIMITER $$ /* se cambia el delimitador para definir el trigger */
+CREATE TRIGGER tr_docente_after_update /* Nombre del trigger */
+AFTER UPDATE ON docente /* Se activa después de una actualización en la tabla docente */
 FOR EACH ROW
-BEGIN-- Aquí se define la acción que se realizará después de una actualización
+BEGIN /* Aquí se define la acción que se realizará después de una actualización */
   INSERT INTO copia_actualizados_docente
     (docente_id, numero_documento, nombres, titulo, anios_experiencia, direccion, tipo_docente)
-  VALUES-- Se usan los valores NEW para referirse a los datos después de la actualización
+  VALUES /* Se usan los valores NEW para referirse a los datos después de la actualización */
     (NEW.docente_id, NEW.numero_documento, NEW.nombres, NEW.titulo, NEW.anios_experiencia, NEW.direccion, NEW.tipo_docente);
-END$$--Fin del trigger
+END$$ /* Fin del trigger */
 
--- Este trigger sirve para insertar en copia_eliminados_docente después de una realizada en la tabla docente de cual quiera de los campos
+/* Este trigger sirve para insertar en copia_eliminados_docente después de una realizada en la tabla docente de cual quiera de los campos */
 
-CREATE TRIGGER tr_docente_after_delete-- Nombre del trigger
-AFTER DELETE ON docente-- Se activa después de una eliminación en la tabla docente
+CREATE TRIGGER tr_docente_after_delete /* Nombre del trigger */
+AFTER DELETE ON docente /* Se activa después de una eliminación en la tabla docente */
 FOR EACH ROW
-BEGIN -- Aquí se define la acción que se realizará después de una eliminación
+BEGIN /* Aquí se define la acción que se realizará después de una eliminación */
   INSERT INTO copia_eliminados_docente
     (docente_id, numero_documento, nombres, titulo, anios_experiencia, direccion, tipo_docente)
-  VALUES-- Se usan los valores OLD para referirse a los datos antes de la eliminación
+  VALUES /* Se usan los valores OLD para referirse a los datos antes de la eliminación */
     (OLD.docente_id, OLD.numero_documento, OLD.nombres, OLD.titulo, OLD.anios_experiencia, OLD.direccion, OLD.tipo_docente);
-END$$-- Fin del trigger
+END$$ /* Fin del trigger */
 
-DELIMITER ;-- Restauramos el delimitador original
+DELIMITER ; /* Restauramos el delimitador original */
 
---ejemplo de inserción en la tabla docente para probar el trigger de actualziacion
---UPDATE pinformaticos.docente SET numero_documento = 'CC3087', nombres = 'Frank Ospina', titulo = 'ing.Software' WHERE docente_id = 4;
+/* ejemplo de inserción en la tabla docente para probar el trigger de actualziacion
+UPDATE pinformaticos.docente SET numero_documento = 'CC3087', nombres = 'Frank Ospina', titulo = 'ing.Software' WHERE docente_id = 4; */
 
---ejemplo de eliminación en la tabla docente para probar el trigger de eliminación
---DELETE FROM pinformaticos.docente WHERE docente_id = 4;
+/* ejemplo de eliminación en la tabla docente para probar el trigger de eliminación
+DELETE FROM pinformaticos.docente WHERE docente_id = 4; */
 
-
--- Creación de docentes para realizar pruebas
+/* Creación de docentes para realizar pruebas */
 INSERT INTO docente (numero_documento, nombres, titulo, anios_experiencia, direccion, tipo_docente) VALUES
 ('CC3001','Ana Pérez','MSc. Sistemas',1,'Calle 10 #1-10','Planta'),
 ('CC3002','Luis Gómez','Ing. Sistemas',4,'Cra 11 #2-11','Catedra'),
@@ -264,8 +267,7 @@ INSERT INTO docente (numero_documento, nombres, titulo, anios_experiencia, direc
 ('CC3049','Fabián Cortés','MSc. Estadística',20,'Calle 58 #9-58','Planta'),
 ('CC3050','Pilar Mora','Ing. Electrónica',23,'Cra 59 #10-59','Catedra');
 
-
--- PROYECTOS 1–20
+/* PROYECTOS 1–20 */
 INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupuesto, horas, docente_id_jefe) VALUES
 ('Actualización Curricular de Ingeniería 01','Revisión y modernización de sílabos con enfoque por competencias','2023-01-15',NULL,28000.00,120,1),
 ('Laboratorio de Robótica Educativa 02','Implementación de kits y guías para prácticas en robótica móvil','2023-01-29','2023-09-10',32000.00,140,2),
@@ -288,7 +290,7 @@ INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupues
 ('Feria de Proyectos Integradores 19','Evento anual de exposición y evaluación por pares','2023-09-24',NULL,37000.00,130,19),
 ('Rediseño de Laboratorios de Redes 20','Actualización de equipos y guías de prácticas','2023-10-08','2024-04-18',96000.00,320,20);
 
--- PROYECTOS 21–40
+/* PROYECTOS 21–40 */
 INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupuesto, horas, docente_id_jefe) VALUES
 ('Programa de Mentorías 21','Mentoría entre egresados y estudiantes de últimos semestres','2023-10-22',NULL,42000.00,150,21),
 ('Currículo STEM Escolar 22','Diseño de mallas curriculares STEM para colegios aliados','2023-11-05','2024-05-25',78000.00,260,22),
@@ -311,7 +313,7 @@ INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupues
 ('Seminario de Ética en Investigación 39','Formación en integridad científica y buenas prácticas','2024-06-30',NULL,30000.00,110,39),
 ('Centro de Tutorías en Cálculo 40','Apoyo intensivo para cursos de ciencias básicas','2024-07-14','2025-02-10',48000.00,170,40);
 
--- PROYECTOS 41–60
+/* PROYECTOS 41–60 */
 INSERT INTO proyecto (nombre, descripcion, fecha_inicial, fecha_final, presupuesto, horas, docente_id_jefe) VALUES
 ('Alfabetización de Datos 41','Curso institucional de cultura y visualización de datos','2024-07-28',NULL,52000.00,180,41),
 ('Programa de Movilidad Estudiantil 42','Convenios y becas para intercambios académicos','2024-08-11','2025-03-08',105000.00,340,42),
