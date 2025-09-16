@@ -1,3 +1,4 @@
+-- 
 DELIMITER $$  --permite que el cuerpo del procedimiento, que contiene múltiples sentencias SQL terminadas en ;, no se interprete como el fin del procedimiento
 CREATE PROCEDURE sp_docente_crear(  --crear un procedimiento almacenado--nombre del procedimiento
   IN p_numero_documento VARCHAR(20), --recibe el número de documento del docente (máx 20 caracteres)
@@ -44,11 +45,6 @@ BEGIN  --inicio del cuerpo
 END$$  --fin del cuerpo
 
 -- Procedimientos PROYECTO
-DROP PROCEDURE IF EXISTS sp_proyecto_crear;--elimina un procedimiento almacenado--condicional que evita errores si el procedimiento no existe; solo lo elimina si está creado(procedimiento para insertar un proyecto)
-DROP PROCEDURE IF EXISTS sp_proyecto_leer;  --procedimiento para consultar un proyecto
-DROP PROCEDURE IF EXISTS sp_proyecto_actualizar; --procedimiento para actualizar un proyecto
-DROP PROCEDURE IF EXISTS sp_proyecto_eliminar;--procedimiento para eliminar un proyecto
-
 --crear un procedimiento almacenado
 CREATE PROCEDURE sp_proyecto_crear(
   IN p_nombre           VARCHAR(120), --nombre del proyecto (máximo 120 caracteres)
